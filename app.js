@@ -3,7 +3,7 @@ import firebaseConfig from './config.js';
 // Initialize Firebase
 const app = firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
-const db = firebase.firestore(); // Initialize Firestore
+const db = firebase.firestore();
 
 // DOM Elements
 const elements = {
@@ -29,7 +29,11 @@ const setPersistence = async (remember) => {
     const persistence = remember ? 
         firebase.auth.Auth.Persistence.LOCAL : 
         firebase.auth.Auth.Persistence.SESSION;
-    await auth.setPersistence(persistence);
+    try {
+        await auth.setPersistence(persistence);
+    } catch (error) {
+        console.error('Error setting persistence:', error);
+    }
 };
 
 // Input Validation for Registration
@@ -58,11 +62,16 @@ const validateRegistrationForm = () => {
 
 // Input Validation for Login
 const validateLoginForm = () => {
-    const name = elements.nameInput().value.trim();
+    const email = elements.emailInput().value.trim();
     const password = elements.passwordInput().value;
     
-    if (!name || !password) {
+    if (!email || !password) {
         showError(errorMessages.emptyFields);
+        return false;
+    }
+    
+    if (!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+        showError(errorMessages.invalidEmail);
         return false;
     }
     
@@ -70,15 +79,16 @@ const validateLoginForm = () => {
 };
 
 function showError(message) {
-    elements.errorMessage().textContent = message;
+    const errorElement = elements.errorMessage();
+    if (errorElement) {
+        errorElement.textContent = message;
+    }
 }
 
-// Auth Actions
 async function signUp() {
     elements.errorMessage().textContent = '';
     if (!validateRegistrationForm()) return;
 
-    // Disable the submit button and show loading state
     const submitButton = document.querySelector('button[onclick="signUp()"]');
     if (submitButton) {
         submitButton.disabled = true;
@@ -86,36 +96,31 @@ async function signUp() {
     }
 
     try {
-        const userCredential = await auth.createUserWithEmailAndPassword(
-            elements.emailInput().value.trim(),
-            elements.passwordInput().value
-        );
-        
+        const email = elements.emailInput().value.trim();
+        const password = elements.passwordInput().value;
         const displayName = elements.nameInput().value.trim();
+
+        // Create user with email and password
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         
-        // Update user profile
+        // Update profile with display name
         await userCredential.user.updateProfile({
             displayName: displayName
         });
 
-        // Store user data in Firestore
+        // Store additional user data in Firestore
         await db.collection('users').doc(userCredential.user.uid).set({
             displayName: displayName,
-            email: elements.emailInput().value.trim(),
+            email: email,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        // Force trigger auth state change
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                console.log('User authenticated, redirecting...');
-                window.location.replace('dashboard.html');
-            }
-        });
+        console.log('User registered successfully');
+        window.location.href = 'dashboard.html';
 
     } catch (error) {
+        console.error('Registration error:', error);
         handleAuthError(error);
-        // Reset button state on error
         if (submitButton) {
             submitButton.disabled = false;
             submitButton.textContent = 'Create Account';
@@ -127,79 +132,62 @@ async function signIn() {
     elements.errorMessage().textContent = '';
     if (!validateLoginForm()) return;
 
-    const name = elements.nameInput().value.trim();
-    const password = elements.passwordInput().value;
-
     try {
-        console.log('Searching for user:', name); // Debug log
-        
-        // Query Firestore for user with matching display name
-        const usersRef = db.collection('users');
-        const snapshot = await usersRef.where('displayName', '==', name).get();
-
-        if (snapshot.empty) {
-            console.log('No matching users found'); // Debug log
-            showError('User not found');
-            return;
-        }
-
-        // Get the first matching user
-        const userDoc = snapshot.docs[0];
-        const userData = userDoc.data();
-        console.log('Found user:', userData.email); // Debug log
-
-        // Try to sign in with email and password
+        const email = elements.emailInput().value.trim();
+        const password = elements.passwordInput().value;
         const remember = elements.rememberMe()?.checked || false;
+
+        // Set persistence first
         await setPersistence(remember);
 
-        try {
-            const result = await auth.signInWithEmailAndPassword(userData.email, password);
-            console.log('Sign in successful'); // Debug log
-            window.location.href = 'dashboard.html';
-        } catch (authError) {
-            console.error('Auth error:', authError); // Debug log
-            if (authError.code === 'auth/wrong-password') {
-                showError('Incorrect password');
-            } else {
-                showError(authError.message);
-            }
-        }
+        // Attempt to sign in
+        await auth.signInWithEmailAndPassword(email, password);
+        
+        console.log('Sign in successful');
+        window.location.href = 'dashboard.html';
+
     } catch (error) {
-        console.error('Login error:', error); // Debug log
+        console.error('Login error:', error);
         handleAuthError(error);
     }
 }
 
-// Error Handling
 function handleAuthError(error) {
     const errorMap = {
         'auth/email-already-in-use': errorMessages.emailInUse,
         'auth/user-not-found': errorMessages.userNotFound,
-        'auth/wrong-password': errorMessages.wrongPassword
+        'auth/wrong-password': errorMessages.wrongPassword,
+        'auth/invalid-email': errorMessages.invalidEmail
     };
-    showError(errorMap[error.code] || error.message);
-    console.error("Firebase Auth Error:", error);
+    
+    const errorMessage = errorMap[error.code] || error.message;
+    showError(errorMessage);
+    console.error('Firebase Auth Error:', error.code, error.message);
 }
 
-// Auth State Management
+// Check auth state
 auth.onAuthStateChanged(user => {
-    if (user && window.location.pathname.endsWith('index.html')) {
-        window.location.href = 'dashboard.html';
+    if (user) {
+        const currentPath = window.location.pathname;
+        if (currentPath.endsWith('index.html') || currentPath.endsWith('register.html')) {
+            window.location.href = 'dashboard.html';
+        }
     }
 });
 
+// Password toggle functionality
 document.addEventListener('DOMContentLoaded', () => {
-    const togglePassword = document.getElementById("togglePassword");
+    const togglePassword = document.getElementById('togglePassword');
     if (togglePassword) {
         togglePassword.addEventListener('click', function() {
-            const passwordInput = document.getElementById("passwordInput");
-            const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
-            passwordInput.setAttribute("type", type);
-            this.textContent = type === "password" ? "Show" : "Hide";
+            const passwordInput = document.getElementById('passwordInput');
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.textContent = type === 'password' ? 'Show' : 'Hide';
         });
     }
 });
 
-// Export functions to window object for HTML access
+// Export functions for HTML access
 window.signUp = signUp;
 window.signIn = signIn;
