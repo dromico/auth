@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Secure Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-4xl mx-auto p-6">
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-6">
+            <div class="flex justify-between items-center">
+                <div class="space-y-1">
+                    <h1 class="text-3xl font-bold text-gray-800">Welcome, <span id="userName" class="text-blue-600">User</span></h1>
+                    <p id="userEmail" class="text-gray-600"></p>
+                </div>
+                <button onclick="window.signOut()" 
+                    class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg transition-all transform hover:scale-105 focus:ring-4 focus:ring-red-200">
+                    Sign Out
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white rounded-2xl shadow-xl p-8">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="p-3 bg-blue-100 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h2 class="text-xl font-semibold text-gray-800">Dashboard Info</h2>
+                </div>
+                <p class="text-gray-600">This is your secure dashboard. Only authenticated users can access this page.</p>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-xl p-8">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="p-3 bg-green-100 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h2 class="text-xl font-semibold text-gray-800">Authentication Status</h2>
+                </div>
+                <p class="text-gray-600">You are currently authenticated and have full access to the dashboard.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK v11.3.1 -->
+    <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-auth-compat.js"></script>
+    <script type="module" src="dashboard.js"></script>
+</body>
+</html>

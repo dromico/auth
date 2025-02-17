@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"name": "test-site01",
+			"path": "../test-site01"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "Auth"
+	}
+}
