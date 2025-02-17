@@ -9,6 +9,6 @@
 		}
 	],
 	"settings": {
-		"liveServer.settings.multiRootWorkspaceName": "Auth"
+		"liveServer.settings.multiRootWorkspaceName": "auth"
 	}
 }

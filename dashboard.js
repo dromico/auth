@@ -7,6 +7,8 @@ const auth = firebase.auth();
 // DOM Elements
 const userName = document.getElementById('userName');
 const userEmail = document.getElementById('userEmail');
+const loadingState = document.getElementById('loadingState');
+const content = document.getElementById('content');
 
 // Sign Out Function
 async function signOut() {
@@ -16,7 +18,7 @@ async function signOut() {
         button.textContent = 'Signing out...';
         
         await auth.signOut();
-        window.location.href = 'index.html';
+        window.location.replace('index.html');
     } catch (error) {
         console.error('Sign out error:', error);
         alert('Failed to sign out. Please try again.');
@@ -28,23 +30,29 @@ async function signOut() {
 // Auth State Listener
 auth.onAuthStateChanged(user => {
     if (!user) {
-        window.location.href = 'index.html';
-    } else {
-        userName.textContent = user.displayName || 'User';
-        userEmail.textContent = user.email;
+        window.location.replace('index.html');
+        return;
     }
+    
+    // Update UI with user info
+    userName.textContent = user.displayName || 'User';
+    userEmail.textContent = user.email;
+    
+    // Show content and hide loading state
+    loadingState.style.display = 'none';
+    content.classList.remove('hidden');
 });
 
-// Route Protection
+// Route Protection - Immediate check
 document.addEventListener('DOMContentLoaded', () => {
     const currentUser = auth.currentUser;
     if (!currentUser) {
         // Double-check current auth state
-        auth.onAuthStateChanged(user => {
-            if (!user) {
-                window.location.href = 'index.html';
+        setTimeout(() => {
+            if (!auth.currentUser) {
+                window.location.replace('index.html');
             }
-        });
+        }, 1000); // Give a second for auth state to initialize
     }
 });
 
